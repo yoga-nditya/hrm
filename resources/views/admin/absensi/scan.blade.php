@@ -32,35 +32,106 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const readerEl = document.getElementById('reader');
-    const resultEl = document.getElementById('scan-result');
-    const btnReset = document.getElementById('btn-reset');
+    const readerEl  = document.getElementById('reader');
+    const resultEl  = document.getElementById('scan-result');
+    const btnReset  = document.getElementById('btn-reset');
+
+    // PENTING: pakai URL relatif supaya ikut skema HTTPS dan tidak mixed-content
+    const scanStoreUrl = "{{ route('admin.absensi.scan.store', [], false) }}"; // -> "/admin/absensi-magang/scan"
 
     let isProcessing = false;
-    let html5QrcodeScanner;
+    let scanner = null;         // instance Html5Qrcode
+    let currentCameraId = null; // id kamera aktif
 
     function showMessage(html, type = 'info') {
-        resultEl.innerHTML = `<div class="alert alert-${type}">${html}</div>`;
+        resultEl.innerHTML = `<div class="alert alert-${type} mb-2">${html}</div>`;
     }
 
-    function postPayload(payload) {
+    async function stopScanner() {
+        if (!scanner) return;
+        try {
+            // Hentikan dulu scanning jika masih berjalan
+            if (scanner.isScanning) {
+                await scanner.stop();
+            }
+        } catch (e) {
+            // abaikan
+        }
+        try {
+            await scanner.clear();
+        } catch (e) {
+            // abaikan
+        }
+    }
+
+    async function startScanner() {
+        isProcessing = false;
+        btnReset.disabled = true;
+        showMessage('Siap untuk scan…', 'secondary');
+
+        if (!scanner) {
+            scanner = new Html5Qrcode("reader", { verbose: false });
+        } else {
+            // Pastikan canvas dibersihkan sebelum start ulang
+            await stopScanner();
+        }
+
+        try {
+            const cameras = await Html5Qrcode.getCameras();
+            if (!cameras || cameras.length === 0) {
+                showMessage('Kamera tidak ditemukan.', 'danger');
+                return;
+            }
+            currentCameraId = cameras[0].id; // ambil kamera pertama
+            const config = { fps: 10, qrbox: 250 };
+
+            await scanner.start(
+                { deviceId: { exact: currentCameraId } },
+                config,
+                onScanSuccess,
+                onScanFailure
+            );
+        } catch (err) {
+            console.error(err);
+            showMessage('Gagal mengakses kamera.', 'danger');
+        }
+    }
+
+    async function onScanSuccess(decodedText, decodedResult) {
         if (isProcessing) return;
         isProcessing = true;
         btnReset.disabled = false;
 
+        showMessage(`QR terbaca: <code>${decodedText}</code>`, 'info');
+
+        // STOP scanner lebih dulu agar tidak memicu scan berkali-kali
+        await stopScanner();
+
+        // Proses ke server
+        postPayload(decodedText);
+    }
+
+    function onScanFailure(error) {
+        // abaikan noise/false positive
+    }
+
+    function postPayload(payload) {
         showMessage('Memproses…', 'secondary');
 
-        fetch("{{ route('admin.absensi.scan.store') }}", {
+        fetch(scanStoreUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-CSRF-TOKEN': "{{ csrf_token() }}"
             },
             body: JSON.stringify({ payload })
         })
-        .then(async res => {
-            const data = await res.json();
-            if (res.ok && data.ok) {
+        .then(async (res) => {
+            let data = null;
+            try { data = await res.json(); } catch (_) {}
+
+            if (res.ok && data && data.ok) {
                 showMessage(
                     `<strong>${data.message}</strong><br>
                      Nama: ${data.data.name}<br>
@@ -70,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     'success'
                 );
             } else {
-                const msg = data && data.message ? data.message : 'Terjadi kesalahan';
+                const msg = (data && data.message) ? data.message : 'Terjadi kesalahan';
                 let extra = '';
                 if (data && data.data) {
                     extra = `<br>Nama: ${data.data.name ?? '-'}<br>Posisi: ${data.data.posisi ?? '-'}<br>Tanggal: ${data.data.tanggal ?? '-'}<br>Waktu: ${data.data.waktu ?? '-'}`;
@@ -80,67 +151,13 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .catch(err => {
             console.error(err);
+            // Biasanya terjadi saat mixed-content/HTTPS, tapi kini sudah dihindari dengan URL relatif.
             showMessage('Gagal mengirim data ke server.', 'danger');
-        })
-        .finally(() => {
-            // Hentikan kamera agar tidak scanning berulang-ulang setelah satu hasil
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.clear().catch(() => {});
-            }
         });
     }
 
-    function onScanSuccess(decodedText, decodedResult) {
-        if (isProcessing) return;
-        showMessage(`QR terbaca: <code>${decodedText}</code>`, 'info');
-        postPayload(decodedText);
-    }
-
-    function onScanFailure(error) {
-        // abaikan noise
-    }
-
-    function startScanner() {
-        isProcessing = false;
-        showMessage('Siap untuk scan…', 'secondary');
-
-        html5QrcodeScanner = new Html5Qrcode("reader");
-        const config = { fps: 10, qrbox: 250 };
-
-        Html5Qrcode.getCameras().then(cameras => {
-            const cameraId = cameras && cameras[0] ? cameras[0].id : null;
-            if (!cameraId) {
-                showMessage('Kamera tidak ditemukan.', 'danger');
-                return;
-            }
-            html5QrcodeScanner.start(
-                cameraId,
-                config,
-                onScanSuccess,
-                onScanFailure
-            ).catch(err => {
-                console.error(err);
-                showMessage('Gagal mengakses kamera.', 'danger');
-            });
-        }).catch(err => {
-            console.error(err);
-            showMessage('Tidak dapat mengakses daftar kamera.', 'danger');
-        });
-    }
-
-    btnReset.addEventListener('click', function () {
-        if (html5QrcodeScanner) {
-            html5QrcodeScanner.clear().then(() => {
-                startScanner();
-                btnReset.disabled = true;
-            }).catch(() => {
-                startScanner();
-                btnReset.disabled = true;
-            });
-        } else {
-            startScanner();
-            btnReset.disabled = true;
-        }
+    btnReset.addEventListener('click', async function () {
+        await startScanner();
     });
 
     // Mulai
