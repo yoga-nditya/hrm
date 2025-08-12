@@ -1,1 +1,1 @@
-web: composer install --no-dev --optimize-autoloader && php artisan key:generate --force && php artisan storage:link || true && php artisan config:cache && php artisan route:cache && php artisan migrate --force && php -S 0.0.0.0:${PORT:-8080} -t public server.php
+web: composer install --no-dev --optimize-autoloader && php artisan config:clear && php artisan migrate --force && php artisan storage:link || true && php artisan config:cache && php artisan route:cache && php -S 0.0.0.0:${PORT:-8080} -t public server.php
