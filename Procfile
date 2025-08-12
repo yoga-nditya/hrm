@@ -1,1 +1,1 @@
-web: composer install --no-dev --optimize-autoloader && php artisan config:clear && php artisan route:clear && php artisan migrate --force && php artisan storage:link || true && php artisan config:cache && php artisan route:cache && php -S 0.0.0.0:${PORT:-8080} -t public server.php
+web: heroku-php-apache2 public/
