@@ -1,7 +1,5 @@
 <?php
 
-// app/Http/Controllers/AbsensiMagangController.php
-
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -40,28 +38,27 @@ class AbsensiMagangController extends Controller
             ->with('user.userDetail', 'lowongan')
             ->firstOrFail();
 
-        // QR cukup berisi UUID agar admin bisa scan dari kamera.
         $qrData = $application->uuid;
 
         return view('user.absensi.qr', compact('application', 'qrData'));
     }
 
-    // (Opsional lama) Form absen mandiri via QR/link manual — BIARKAN ADA jika masih dibutuhkan
+    // Form absen mandiri via QR/link manual
     public function formAbsen($uuid)
     {
         $application = StatusLamaran::with('user.userDetail', 'lowongan')
             ->where('uuid', $uuid)
-            ->where('users_id', Auth::user()->uuid) // user hanya bisa akses miliknya
+            ->where('users_id', Auth::user()->uuid)
             ->where('status', 'approved')
             ->firstOrFail();
 
-        $today = Carbon::today()->toDateString();
+        $today = Carbon::today('Asia/Jakarta')->toDateString();
         $already = AbsensiMagang::where('application_uuid', $uuid)->where('tanggal', $today)->first();
 
         return view('user.absensi.form', compact('application', 'already'));
     }
 
-    // (Opsional lama) Submit absen mandiri
+    // Submit absen mandiri
     public function submitAbsen(Request $request, $uuid)
     {
         $application = StatusLamaran::where('uuid', $uuid)
@@ -69,7 +66,7 @@ class AbsensiMagangController extends Controller
             ->where('status', 'approved')
             ->firstOrFail();
 
-        $today = Carbon::today()->toDateString();
+        $today = Carbon::today('Asia/Jakarta')->toDateString();
         $already = AbsensiMagang::where('application_uuid', $uuid)->where('tanggal', $today)->first();
         if ($already) {
             return back()->with('error', 'Anda sudah absen hari ini!');
@@ -78,7 +75,7 @@ class AbsensiMagangController extends Controller
         AbsensiMagang::create([
             'application_uuid' => $uuid,
             'tanggal' => $today,
-            'waktu' => Carbon::now()->format('H:i:s'),
+            'waktu' => Carbon::now('Asia/Jakarta')->format('H:i:s'),
             'keterangan' => 'Hadir'
         ]);
 
@@ -135,7 +132,7 @@ class AbsensiMagangController extends Controller
             ], 404);
         }
 
-        $today = Carbon::today()->toDateString();
+        $today = Carbon::today('Asia/Jakarta')->toDateString();
 
         $already = AbsensiMagang::where('application_uuid', $uuid)
             ->where('tanggal', $today)
@@ -158,7 +155,7 @@ class AbsensiMagangController extends Controller
         $absen = AbsensiMagang::create([
             'application_uuid' => $uuid,
             'tanggal' => $today,
-            'waktu' => Carbon::now()->format('H:i:s'),
+            'waktu' => Carbon::now('Asia/Jakarta')->format('H:i:s'),
             'keterangan' => 'Hadir'
         ]);
 
