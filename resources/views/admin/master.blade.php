@@ -119,7 +119,7 @@
                     <li class="nav-item">
                         <a href="{{ route('admin.absensi.index') }}" class="nav-link {{ request()->routeIs('admin.absensi.*') ? 'active' : '' }}">
                             <i class="nav-icon fas fa-calendar-check"></i>
-                            <p>Absensi Magang</p>
+                            <p>Presensi Magang</p>
                         </a>
                     </li>
                 </ul>
