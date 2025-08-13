@@ -537,7 +537,7 @@
             <li>
                 <a href="{{ route('user.absensi.index') }}" class="{{ request()->routeIs('user.absensi.*') ? 'active' : '' }}">
                     <i class="fas fa-calendar-check"></i>
-                    <span class="menu-text">Absensi Magang</span>
+                    <span class="menu-text">Presensi Magang</span>
                 </a>
             </li>
 
