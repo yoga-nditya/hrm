@@ -1,7 +1,7 @@
 {{-- resources/views/admin/absensi/scan.blade.php --}}
 @extends('admin.master')
-@section('title', 'Scan QR Absensi')
-@section('page-title', 'Scan QR Absensi Magang')
+@section('title', 'Scan QR Presensi')
+@section('page-title', 'Scan QR Presensi Magang')
 
 @section('content')
 <div class="card">

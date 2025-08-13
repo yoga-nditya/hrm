@@ -1,7 +1,7 @@
 {{-- resources/views/admin/absensi/index.blade.php --}}
 @extends('admin.master')
-@section('title', 'Absensi Magang')
-@section('page-title', 'Rekap Absensi Magang')
+@section('title', 'Presensi Magang')
+@section('page-title', 'Rekap Presensi Magang')
 
 @section('content')
 <div class="card">

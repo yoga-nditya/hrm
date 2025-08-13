@@ -1,16 +1,16 @@
 @extends('layouts.app')
-@section('title', 'Absensi Magang')
+@section('title', 'Presensi Magang')
 
 @section('content')
 <div class="container py-4">
-    <h3 class="mb-3">Absensi Magang</h3>
+    <h3 class="mb-3">Presensi Magang</h3>
 
     @if(!$application)
         <div class="alert alert-warning">Anda belum diterima magang atau belum ada lamaran diterima.</div>
     @else
         <div class="mb-4">
             <a href="{{ route('user.absensi.qr') }}" class="btn btn-outline-success">
-                <i class="fas fa-qrcode"></i> Tampilkan QR Absensi
+                <i class="fas fa-qrcode"></i> Tampilkan QR Presensi
             </a>
         </div>
         <h5>Riwayat Absensi</h5>
